@@ -5,7 +5,7 @@ import { Label } from "../interfaces/label";
 
 const getLabels = async (): Promise<Label[]> => {
   await sleep(2);
-  const { data } = await githubApi.get<Label[]>("/labels", {
+  const { data } = await githubApi.get<Label[]>("/labels?per_page=100", {
     headers: {
       Authorization: null,
     },
@@ -15,7 +15,7 @@ const getLabels = async (): Promise<Label[]> => {
 
 export const useLabels = () => {
   const labelsQuery = useQuery(["labels"], getLabels, {
-    staleTime: 1000 * 60 * 60,
+    /* staleTime: 1000 * 60 * 60, */
     placeholderData: [
       {
         id: 725156255,
