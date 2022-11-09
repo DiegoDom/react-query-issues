@@ -1,15 +1,17 @@
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
+import { sleep } from "../../helpers";
 import { githubApi } from "../../api/githubApi";
-import { sleep } from "../../helpers/sleep";
-import { Issue, Label, State } from "../interfaces";
+import { Issue, State } from "../interfaces";
 
 interface Props {
   state?: State;
   labels: string[];
+  page?: number;
 }
 
-const getIssues = async (labels: string[] = [], state?: State): Promise<Issue[]> => {
+const getIssues = async ({ labels, state, page = 1 }: Props): Promise<Issue[]> => {
   await sleep(2);
 
   const params = new URLSearchParams();
@@ -21,7 +23,7 @@ const getIssues = async (labels: string[] = [], state?: State): Promise<Issue[]>
     params.append("labels", labelsString);
   }
 
-  params.append("page", "1");
+  params.append("page", `${page}`);
   params.append("per_page", "5");
 
   const { data } = await githubApi.get<Issue[]>("/issues", { params });
@@ -29,11 +31,29 @@ const getIssues = async (labels: string[] = [], state?: State): Promise<Issue[]>
 };
 
 export const useIssues = ({ labels, state }: Props) => {
-  const issuesQuery = useQuery(["issues", { labels, state }], () => getIssues(labels, state), {
+  const [page, setPage] = useState<number>(1);
+
+  useEffect(() => {
+    setPage(1);
+  }, [state, labels]);
+
+  const issuesQuery = useQuery(["issues", { labels, state, page }], () => getIssues({ labels, state, page }), {
     /* staleTime: 1000 * 60 * 60, */
   });
 
+  const nextPage = () => {
+    if (issuesQuery.data?.length === 0) return;
+    setPage(page + 1);
+  };
+
+  const previousPage = () => {
+    if (page > 1) setPage(page - 1);
+  };
+
   return {
     issuesQuery,
+    page: issuesQuery.isFetching ? "Loading" : page,
+    nextPage,
+    previousPage,
   };
 };
